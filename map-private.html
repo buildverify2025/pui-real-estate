@@ -267,7 +267,8 @@
                 commission: 'TBD',
                 notes: 'Needs full renovation — roof, electrical, plumbing, interior. Structure sound (RC). Timber trusses likely teak. GET STRUCTURAL ENGINEER INSPECTION.',
                 daysOnMarket: 0,
-                color: '#e74c3c'
+                color: '#e74c3c',
+                img: 'photos/IMG_9089.jpeg'
             },
             {
                 id: 'PUI-002',
@@ -290,7 +291,8 @@
                 commission: 'TBD',
                 notes: 'Photo needed. Further west in same estate.',
                 daysOnMarket: 0,
-                color: '#e74c3c'
+                color: '#e74c3c',
+                img: 'photos/IMG_9090.jpeg'
             },
             {
                 id: 'PUI-003',
@@ -313,7 +315,8 @@
                 commission: 'TBD',
                 notes: 'Mountain land at 997m elevation. Forest views. Drone photos taken Aug 2025.',
                 daysOnMarket: 0,
-                color: '#27ae60'
+                color: '#27ae60',
+                img: 'photos/6rai_dji_fly_20250824_130830_0007_1756026818650_photo.jpg'
             },
             {
                 id: 'PUI-004',
@@ -336,7 +339,8 @@
                 commission: 'TBD',
                 notes: '"Across the street" from PUI-005 (50 rai). Exact GPS needs confirmation. Photos needed.',
                 daysOnMarket: 0,
-                color: '#27ae60'
+                color: '#27ae60',
+                img: null
             },
             {
                 id: 'PUI-005',
@@ -359,7 +363,8 @@
                 commission: 'TBD',
                 notes: 'Massive rice paddy at 900m elevation. Mountain views. Resort or farm potential. Drone photos Aug 2025.',
                 daysOnMarket: 0,
-                color: '#27ae60'
+                color: '#27ae60',
+                img: 'photos/50rai_dji_fly_20250824_143056_0014_1756026621114_photo.jpg'
             },
             {
                 id: 'PUI-006',
@@ -382,7 +387,8 @@
                 commission: 'TBD',
                 notes: 'Natural pond on property. Hang Dong area. Drone photos taken.',
                 daysOnMarket: 0,
-                color: '#27ae60'
+                color: '#27ae60',
+                img: 'photos/plot_near_houses_0002.jpg'
             },
             {
                 id: 'PUI-007',
@@ -405,7 +411,8 @@
                 commission: 'TBD',
                 notes: 'Large compound on Soi Ban Suan Shiva. Multiple structures, courtyard, pond. Business marker: "Red Coral Concept". Visited Mar 15. Need chanote + photos + building details.',
                 daysOnMarket: 0,
-                color: '#e74c3c'
+                color: '#e74c3c',
+                img: null
             }
         ];
 
@@ -459,7 +466,9 @@
         }
 
         function buildPrivatePopup(p) {
+            let imgHtml = p.img ? `<img src="${p.img}" style="width:100%;height:140px;object-fit:cover;border-radius:4px;margin-bottom:8px;" onerror="this.style.display='none'" />` : '';
             return `
+                ${imgHtml}
                 <div class="popup-title">${p.id}: ${p.name}</div>
                 
                 <div class="popup-section">
