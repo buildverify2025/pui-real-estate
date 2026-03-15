@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pui Real Estate — Private Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Sarabun', sans-serif; background: #0d1117; color: #e0e0e0; }
+        
+        /* Password gate */
+        #gate {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #0d1117;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .gate-box {
+            background: #161b22;
+            border: 1px solid #c9a84c;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            max-width: 360px;
+        }
+        .gate-box h2 {
+            font-family: 'Playfair Display', serif;
+            color: #c9a84c;
+            margin-bottom: 8px;
+        }
+        .gate-box p { color: #999; font-size: 0.9rem; margin-bottom: 20px; }
+        .gate-box input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0d1117;
+            border: 1px solid #333;
+            color: #e0e0e0;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+        .gate-box button {
+            width: 100%;
+            padding: 10px;
+            background: #c9a84c;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .gate-box button:hover { background: #d4af5a; }
+        .gate-error { color: #e74c3c; font-size: 0.85rem; display: none; margin-top: 8px; }
+        
+        #app { display: none; }
+        
+        .header {
+            background: #161b22;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #e74c3c;
+        }
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            color: #e74c3c;
+            font-size: 1.3rem;
+        }
+        .header .badge {
+            background: #e74c3c;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        
+        .layout {
+            display: flex;
+            height: calc(100vh - 52px);
+        }
+        
+        .sidebar {
+            width: 380px;
+            background: #161b22;
+            border-right: 1px solid #333;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        
+        .sidebar-header {
+            padding: 12px 16px;
+            background: #1c2333;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-header h3 { color: #c9a84c; font-size: 0.95rem; }
+        .sidebar-header .total { color: #999; font-size: 0.85rem; }
+        
+        .property-card {
+            padding: 14px 16px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .property-card:hover { background: #1c2333; }
+        .property-card.active { background: #1c2333; border-left: 3px solid #c9a84c; }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 6px;
+        }
+        .card-id { 
+            font-weight: 700; 
+            color: #c9a84c; 
+            font-size: 0.85rem; 
+        }
+        .card-status {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .status-new { background: #1a6b3c; color: #4ade80; }
+        .status-listed { background: #1a4b6b; color: #60a5fa; }
+        .status-showing { background: #6b5a1a; color: #fbbf24; }
+        .status-offer { background: #6b1a1a; color: #f87171; }
+        .status-closed { background: #333; color: #999; }
+        
+        .card-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 2px; }
+        .card-location { color: #999; font-size: 0.8rem; margin-bottom: 6px; }
+        
+        .card-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            font-size: 0.78rem;
+        }
+        .card-details .label { color: #666; }
+        .card-details .value { color: #ccc; }
+        .card-details .warn { color: #f59e0b; }
+        .card-details .danger { color: #ef4444; }
+        .card-details .success { color: #22c55e; }
+        
+        #map {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .leaflet-popup-content-wrapper {
+            background: #161b22;
+            color: #e0e0e0;
+            border: 1px solid #e74c3c;
+            border-radius: 8px;
+        }
+        .leaflet-popup-tip { background: #161b22; }
+        .leaflet-popup-content { margin: 12px 16px; min-width: 280px; }
+        
+        .popup-title { color: #c9a84c; font-weight: 700; font-size: 1rem; }
+        .popup-section { margin-top: 8px; padding-top: 8px; border-top: 1px solid #333; }
+        .popup-section h4 { color: #e74c3c; font-size: 0.8rem; margin-bottom: 4px; text-transform: uppercase; }
+        .popup-row { display: flex; justify-content: space-between; font-size: 0.82rem; padding: 1px 0; }
+        .popup-row .label { color: #888; }
+        .popup-row .value { color: #e0e0e0; font-weight: 600; }
+        .popup-row .value.warn { color: #f59e0b; }
+        .popup-row .value.danger { color: #ef4444; }
+        .popup-row .value.success { color: #22c55e; }
+        
+        .legend {
+            background: #161b22;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.78rem;
+            line-height: 1.8;
+        }
+        .legend h4 { color: #e74c3c; margin-bottom: 4px; font-size: 0.8rem; }
+        
+        @media (max-width: 768px) {
+            .layout { flex-direction: column; }
+            .sidebar { width: 100%; height: 40vh; }
+            #map { height: 60vh; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Gate -->
+    <div id="gate">
+        <div class="gate-box">
+            <h2>🔒 Private Dashboard</h2>
+            <p>Authorized access only</p>
+            <input type="password" id="passInput" placeholder="Enter password" onkeypress="if(event.key==='Enter')checkPass()">
+            <button onclick="checkPass()">Access Dashboard</button>
+            <div class="gate-error" id="gateError">Incorrect password</div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <div class="header">
+            <h1>🔒 Pui Real Estate — Private Dashboard</h1>
+            <span class="badge">CONFIDENTIAL</span>
+        </div>
+        
+        <div class="layout">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h3>Property Portfolio</h3>
+                    <span class="total" id="totalValue"></span>
+                </div>
+                <div id="propertyList"></div>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Simple password gate (not real security — just keeps casual visitors out)
+        const PASS_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // sha256 of 'password'
+        
+        async function sha256(str) {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        async function checkPass() {
+            const input = document.getElementById('passInput').value;
+            const hash = await sha256(input);
+            // Accept any non-empty password for now — Jeremy will set a real one
+            if (input.length > 0) {
+                document.getElementById('gate').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                initMap();
+            } else {
+                document.getElementById('gateError').style.display = 'block';
+            }
+        }
+
+        const properties = [
+            {
+                id: 'PUI-001',
+                lat: 18.7234, lng: 98.9207,
+                name: 'Country Park Ville House 83/18',
+                type: 'house', region: 'Chiang Mai',
+                district: 'Hang Dong (Nong Khwai)',
+                size: '270 sqm · 5BR/6BA',
+                landSize: 'TBD sq.wah',
+                price: 'TBD',
+                marketValue: '฿17-18M (renovated comp)',
+                renoEstimate: '฿2.7M-5.2M',
+                titleType: 'TBD (likely Chanot)',
+                status: 'new',
+                statusLabel: 'New',
+                debt: 'Unknown',
+                urgency: 'TBD',
+                owner: 'Pi Mai contact',
+                ownerPhone: 'Via Pui',
+                commission: 'TBD',
+                notes: 'Needs full renovation — roof, electrical, plumbing, interior. Structure sound (RC). Timber trusses likely teak. GET STRUCTURAL ENGINEER INSPECTION.',
+                daysOnMarket: 0,
+                color: '#e74c3c'
+            },
+            {
+                id: 'PUI-002',
+                lat: 18.7230, lng: 98.9195,
+                name: 'Country Park Ville House 83/19',
+                type: 'house', region: 'Chiang Mai',
+                district: 'Hang Dong (Nong Khwai)',
+                size: 'TBD',
+                landSize: 'TBD',
+                price: 'TBD',
+                marketValue: 'Similar to PUI-001',
+                renoEstimate: 'TBD',
+                titleType: 'TBD',
+                status: 'new',
+                statusLabel: 'New',
+                debt: 'Unknown',
+                urgency: 'TBD',
+                owner: 'Pi Mai contact',
+                ownerPhone: 'Via Pui',
+                commission: 'TBD',
+                notes: 'Photo needed. Further west in same estate.',
+                daysOnMarket: 0,
+                color: '#e74c3c'
+            },
+            {
+                id: 'PUI-003',
+                lat: 19.1172, lng: 98.7071,
+                name: '6 Rai Mountain Land',
+                type: 'land', region: 'Chiang Mai',
+                district: 'Mae Taeng (Ban Pang Makluai)',
+                size: '6 Rai (9,600 sqm)',
+                landSize: '6 Rai',
+                price: 'TBD',
+                marketValue: '฿4.8M-9M (฿800K-1.5M/rai)',
+                renoEstimate: 'N/A — raw land',
+                titleType: 'TBD',
+                status: 'new',
+                statusLabel: 'New',
+                debt: 'Unknown',
+                urgency: 'TBD',
+                owner: 'Pi Mai contact',
+                ownerPhone: 'Via Pui',
+                commission: 'TBD',
+                notes: 'Mountain land at 997m elevation. Forest views. Drone photos taken Aug 2025.',
+                daysOnMarket: 0,
+                color: '#27ae60'
+            },
+            {
+                id: 'PUI-004',
+                lat: 19.0620, lng: 98.7255,
+                name: '20 Rai Land Plot',
+                type: 'land', region: 'Chiang Mai',
+                district: 'Mae Taeng',
+                size: '20 Rai (32,000 sqm)',
+                landSize: '20 Rai',
+                price: 'TBD',
+                marketValue: '฿10M-20M (฿500K-1M/rai)',
+                renoEstimate: 'N/A — raw land',
+                titleType: 'TBD',
+                status: 'new',
+                statusLabel: 'New',
+                debt: 'Unknown',
+                urgency: 'TBD',
+                owner: 'Pi Mai contact',
+                ownerPhone: 'Via Pui',
+                commission: 'TBD',
+                notes: '"Across the street" from PUI-005 (50 rai). Exact GPS needs confirmation. Photos needed.',
+                daysOnMarket: 0,
+                color: '#27ae60'
+            },
+            {
+                id: 'PUI-005',
+                lat: 19.0610, lng: 98.7265,
+                name: '50 Rai Rice Paddy',
+                type: 'land', region: 'Chiang Mai',
+                district: 'Mae Taeng (Ban Pa Yang Nat)',
+                size: '50 Rai (80,000 sqm)',
+                landSize: '50 Rai',
+                price: 'TBD',
+                marketValue: '฿25M-40M (฿500K-800K/rai)',
+                renoEstimate: 'N/A — agricultural land',
+                titleType: 'TBD',
+                status: 'new',
+                statusLabel: 'New',
+                debt: 'Unknown',
+                urgency: 'TBD',
+                owner: 'Pi Mai contact',
+                ownerPhone: 'Via Pui',
+                commission: 'TBD',
+                notes: 'Massive rice paddy at 900m elevation. Mountain views. Resort or farm potential. Drone photos Aug 2025.',
+                daysOnMarket: 0,
+                color: '#27ae60'
+            },
+            {
+                id: 'PUI-006',
+                lat: 18.6922, lng: 98.9495,
+                name: 'Land + Pond (Ban Ton Hai)',
+                type: 'land', region: 'Chiang Mai',
+                district: 'Hang Dong (San Phak Wan)',
+                size: 'TBD',
+                landSize: 'TBD',
+                price: 'TBD',
+                marketValue: 'TBD — depends on size',
+                renoEstimate: 'N/A',
+                titleType: 'TBD',
+                status: 'new',
+                statusLabel: 'New',
+                debt: 'Unknown',
+                urgency: 'TBD',
+                owner: 'Pi Mai contact',
+                ownerPhone: 'Via Pui',
+                commission: 'TBD',
+                notes: 'Natural pond on property. Hang Dong area. Drone photos taken.',
+                daysOnMarket: 0,
+                color: '#27ae60'
+            },
+            {
+                id: 'PUI-007',
+                lat: 13.902091, lng: 100.659298,
+                name: 'Sai Mai Compound',
+                type: 'house', region: 'Bangkok',
+                district: 'Sai Mai (O Ngoen)',
+                size: '~2-2.5 Rai · 6-8 Structures',
+                landSize: '~2-2.5 Rai (est. 2,000-2,500 sq.wah)',
+                price: 'TBD',
+                marketValue: '฿38M-75M (land only)',
+                renoEstimate: 'TBD — depends on structures',
+                titleType: 'TBD — need Chanote',
+                status: 'new',
+                statusLabel: 'New',
+                debt: 'Unknown',
+                urgency: 'TBD',
+                owner: 'TBD',
+                ownerPhone: 'TBD',
+                commission: 'TBD',
+                notes: 'Large compound on Soi Ban Suan Shiva. Multiple structures, courtyard, pond. Business marker: "Red Coral Concept". Visited Mar 15. Need chanote + photos + building details.',
+                daysOnMarket: 0,
+                color: '#e74c3c'
+            }
+        ];
+
+        function getStatusClass(status) {
+            const map = { new: 'status-new', listed: 'status-listed', showing: 'status-showing', offer: 'status-offer', closed: 'status-closed' };
+            return map[status] || 'status-new';
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('propertyList');
+            list.innerHTML = properties.map((p, i) => `
+                <div class="property-card" onclick="flyTo(${i})" id="card-${i}">
+                    <div class="card-header">
+                        <span class="card-id">${p.id}</span>
+                        <span class="card-status ${getStatusClass(p.status)}">${p.statusLabel}</span>
+                    </div>
+                    <div class="card-name">${p.name}</div>
+                    <div class="card-location">📍 ${p.district}, ${p.region}</div>
+                    <div class="card-details">
+                        <div><span class="label">Size:</span></div>
+                        <div><span class="value">${p.landSize}</span></div>
+                        <div><span class="label">Market Value:</span></div>
+                        <div><span class="value">${p.marketValue}</span></div>
+                        <div><span class="label">Debt:</span></div>
+                        <div><span class="value ${p.debt === 'Unknown' ? 'warn' : ''}">${p.debt}</span></div>
+                        <div><span class="label">Days Listed:</span></div>
+                        <div><span class="value">${p.daysOnMarket}</span></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        let map, markerGroup, markerRefs = [];
+
+        function createPrivateIcon(color, type) {
+            return L.divIcon({
+                html: `<div style="
+                    width: 32px; height: 32px;
+                    background: ${color};
+                    border: 2px solid #fff;
+                    border-radius: 50%;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 14px; color: #fff;
+                ">${type === 'house' ? '🏠' : '🏞️'}</div>`,
+                className: 'custom-marker',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16],
+                popupAnchor: [0, -18]
+            });
+        }
+
+        function buildPrivatePopup(p) {
+            return `
+                <div class="popup-title">${p.id}: ${p.name}</div>
+                
+                <div class="popup-section">
+                    <h4>📍 Location</h4>
+                    <div class="popup-row"><span class="label">District</span><span class="value">${p.district}</span></div>
+                    <div class="popup-row"><span class="label">Region</span><span class="value">${p.region}</span></div>
+                    <div class="popup-row"><span class="label">GPS</span><span class="value">${p.lat}, ${p.lng}</span></div>
+                </div>
+                
+                <div class="popup-section">
+                    <h4>📐 Property Details</h4>
+                    <div class="popup-row"><span class="label">Size</span><span class="value">${p.size}</span></div>
+                    <div class="popup-row"><span class="label">Land</span><span class="value">${p.landSize}</span></div>
+                    <div class="popup-row"><span class="label">Title</span><span class="value">${p.titleType}</span></div>
+                    <div class="popup-row"><span class="label">Type</span><span class="value">${p.type}</span></div>
+                </div>
+                
+                <div class="popup-section">
+                    <h4>💰 Financials</h4>
+                    <div class="popup-row"><span class="label">Asking</span><span class="value">${p.price}</span></div>
+                    <div class="popup-row"><span class="label">Market Value</span><span class="value success">${p.marketValue}</span></div>
+                    <div class="popup-row"><span class="label">Reno Cost</span><span class="value warn">${p.renoEstimate}</span></div>
+                    <div class="popup-row"><span class="label">Debt</span><span class="value ${p.debt === 'Unknown' ? 'warn' : 'danger'}">${p.debt}</span></div>
+                    <div class="popup-row"><span class="label">Commission</span><span class="value">${p.commission}</span></div>
+                </div>
+                
+                <div class="popup-section">
+                    <h4>👤 Owner / Seller</h4>
+                    <div class="popup-row"><span class="label">Contact</span><span class="value">${p.owner}</span></div>
+                    <div class="popup-row"><span class="label">Phone</span><span class="value">${p.ownerPhone}</span></div>
+                    <div class="popup-row"><span class="label">Urgency</span><span class="value ${p.urgency === 'TBD' ? 'warn' : ''}">${p.urgency}</span></div>
+                </div>
+                
+                <div class="popup-section">
+                    <h4>📝 Notes</h4>
+                    <div style="font-size:0.8rem;color:#ccc;line-height:1.4;">${p.notes}</div>
+                </div>
+            `;
+        }
+
+        function flyTo(index) {
+            const p = properties[index];
+            map.setView([p.lat, p.lng], p.region === 'Bangkok' ? 16 : 14, { animate: true });
+            markerRefs[index].openPopup();
+            
+            document.querySelectorAll('.property-card').forEach(c => c.classList.remove('active'));
+            document.getElementById(`card-${index}`).classList.add('active');
+        }
+
+        function initMap() {
+            map = L.map('map').setView([16.5, 99.5], 6);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap © CARTO',
+                maxZoom: 19
+            }).addTo(map);
+
+            markerGroup = L.featureGroup();
+
+            properties.forEach((p, i) => {
+                const marker = L.marker([p.lat, p.lng], {
+                    icon: createPrivateIcon(p.color, p.type)
+                }).bindPopup(buildPrivatePopup(p), { maxWidth: 340 });
+
+                marker.on('click', () => {
+                    document.querySelectorAll('.property-card').forEach(c => c.classList.remove('active'));
+                    document.getElementById(`card-${i}`).classList.add('active');
+                    document.getElementById(`card-${i}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                });
+
+                markerGroup.addLayer(marker);
+                markerRefs.push(marker);
+            });
+
+            markerGroup.addTo(map);
+            map.fitBounds(markerGroup.getBounds().pad(0.1));
+
+            renderSidebar();
+        }
+    </script>
+</body>
+</html>

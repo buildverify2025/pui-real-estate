@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pui Real Estate — Property Map | แผนที่อสังหาริมทรัพย์</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Sarabun', sans-serif; background: #1a1a2e; color: #e0e0e0; }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #c9a84c;
+        }
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            color: #c9a84c;
+            font-size: 1.4rem;
+        }
+        .header .subtitle { font-size: 0.85rem; color: #999; }
+        .header .back-link {
+            color: #c9a84c;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .header .back-link:hover { text-decoration: underline; }
+        
+        .controls {
+            background: #16213e;
+            padding: 12px 24px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 1px solid #2a2a4a;
+        }
+        .controls label { font-size: 0.85rem; color: #999; }
+        .controls select, .controls button {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            border: 1px solid #c9a84c;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .controls button:hover { background: #c9a84c; color: #1a1a2e; }
+        .controls .count { 
+            margin-left: auto; 
+            color: #c9a84c; 
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        #map { 
+            height: calc(100vh - 120px); 
+            width: 100%; 
+        }
+        
+        .leaflet-popup-content-wrapper {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            border: 1px solid #c9a84c;
+            border-radius: 8px;
+        }
+        .leaflet-popup-tip { background: #1a1a2e; }
+        .leaflet-popup-content { margin: 12px 16px; min-width: 240px; }
+        
+        .popup-title {
+            font-family: 'Playfair Display', serif;
+            color: #c9a84c;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        .popup-thai { color: #999; font-size: 0.85rem; margin-bottom: 8px; }
+        .popup-details { font-size: 0.85rem; line-height: 1.6; }
+        .popup-details .label { color: #999; }
+        .popup-details .value { color: #e0e0e0; font-weight: 600; }
+        .popup-price {
+            color: #c9a84c;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #2a2a4a;
+        }
+        .popup-contact {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        .popup-contact a {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .btn-whatsapp { background: #25D366; color: #fff; }
+        .btn-line { background: #06C755; color: #fff; }
+        .popup-img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .legend {
+            background: #1a1a2e;
+            border: 1px solid #c9a84c;
+            border-radius: 8px;
+            padding: 12px;
+            line-height: 1.8;
+            font-size: 0.8rem;
+        }
+        .legend h4 { color: #c9a84c; margin-bottom: 4px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.1rem; }
+            .controls { padding: 8px 12px; }
+            #map { height: calc(100vh - 110px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🏠 Pui Real Estate</h1>
+            <div class="subtitle">Bangkok & Beyond — Properties Across Thailand</div>
+        </div>
+        <a href="index.html" class="back-link">← Back to Listings</a>
+    </div>
+    
+    <div class="controls">
+        <label>Filter / กรอง:</label>
+        <select id="filterRegion">
+            <option value="all">All Regions / ทุกภูมิภาค</option>
+            <option value="bangkok">Bangkok / กรุงเทพฯ</option>
+            <option value="chiangmai">Chiang Mai / เชียงใหม่</option>
+        </select>
+        <select id="filterType">
+            <option value="all">All Types / ทุกประเภท</option>
+            <option value="house">House / บ้าน</option>
+            <option value="land">Land / ที่ดิน</option>
+        </select>
+        <button onclick="resetFilters()">Reset / รีเซ็ต</button>
+        <span class="count" id="propertyCount">7 Properties</span>
+    </div>
+    
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const properties = [
+            {
+                id: 'PUI-001',
+                lat: 18.7234, lng: 98.9207,
+                name: 'Country Park Ville House',
+                nameTh: 'บ้านคันทรี พาร์ค วิลล์ 83/18',
+                type: 'house',
+                region: 'chiangmai',
+                district: 'Hang Dong',
+                districtTh: 'หางดง',
+                size: '270 sqm / 5 Bed / 6 Bath',
+                sizeTh: '270 ตร.ม. / 5 ห้องนอน / 6 ห้องน้ำ',
+                price: 'Contact for Price',
+                priceTh: 'ติดต่อสอบถามราคา',
+                desc: 'Spacious family home in premium Nong Khwai area',
+                color: '#e74c3c',
+                img: 'photos/IMG_9073.jpeg'
+            },
+            {
+                id: 'PUI-002',
+                lat: 18.7230, lng: 98.9195,
+                name: 'Country Park Ville House 2',
+                nameTh: 'บ้านคันทรี พาร์ค วิลล์ 83/19',
+                type: 'house',
+                region: 'chiangmai',
+                district: 'Hang Dong',
+                districtTh: 'หางดง',
+                size: 'Details Coming Soon',
+                sizeTh: 'รายละเอียดเร็วๆ นี้',
+                price: 'Contact for Price',
+                priceTh: 'ติดต่อสอบถามราคา',
+                desc: 'Second home in Country Park Ville estate',
+                color: '#e74c3c',
+                img: null
+            },
+            {
+                id: 'PUI-003',
+                lat: 19.1172, lng: 98.7071,
+                name: '6 Rai Mountain Land',
+                nameTh: 'ที่ดิน 6 ไร่ บ้านปางมะกล้วย',
+                type: 'land',
+                region: 'chiangmai',
+                district: 'Mae Taeng',
+                districtTh: 'แม่แตง',
+                size: '6 Rai (9,600 sqm) · 997m Elevation',
+                sizeTh: '6 ไร่ · สูง 997 ม.',
+                price: 'Contact for Price',
+                priceTh: 'ติดต่อสอบถามราคา',
+                desc: 'Mountain land with forest views, Ban Pang Makluai',
+                color: '#27ae60',
+                img: 'photos/pui003_1.jpeg'
+            },
+            {
+                id: 'PUI-004',
+                lat: 19.0620, lng: 98.7255,
+                name: '20 Rai Land Plot',
+                nameTh: 'ที่ดิน 20 ไร่ แม่แตง',
+                type: 'land',
+                region: 'chiangmai',
+                district: 'Mae Taeng',
+                districtTh: 'แม่แตง',
+                size: '20 Rai (32,000 sqm)',
+                sizeTh: '20 ไร่',
+                price: 'Contact for Price',
+                priceTh: 'ติดต่อสอบถามราคา',
+                desc: 'Large land plot near Ban Pa Yang Nat',
+                color: '#27ae60',
+                img: null
+            },
+            {
+                id: 'PUI-005',
+                lat: 19.0610, lng: 98.7265,
+                name: '50 Rai Rice Paddy & Land',
+                nameTh: 'ที่ดิน 50 ไร่ + นาข้าว บ้านป่ายางนาด',
+                type: 'land',
+                region: 'chiangmai',
+                district: 'Mae Taeng',
+                districtTh: 'แม่แตง',
+                size: '50 Rai (80,000 sqm) · 900m Elevation',
+                sizeTh: '50 ไร่ · สูง 900 ม.',
+                price: 'Contact for Price',
+                priceTh: 'ติดต่อสอบถามราคา',
+                desc: 'Massive rice paddy with mountain views — resort or farm potential',
+                color: '#27ae60',
+                img: 'photos/pui005_1.jpeg'
+            },
+            {
+                id: 'PUI-006',
+                lat: 18.6922, lng: 98.9495,
+                name: 'Land with Pond',
+                nameTh: 'ที่ดิน + สระน้ำ บ้านต้นไฮ',
+                type: 'land',
+                region: 'chiangmai',
+                district: 'Hang Dong',
+                districtTh: 'หางดง',
+                size: 'Contact for Details',
+                sizeTh: 'ติดต่อสอบถาม',
+                price: 'Contact for Price',
+                priceTh: 'ติดต่อสอบถามราคา',
+                desc: 'Land with natural pond, Ban Ton Hai, San Phak Wan',
+                color: '#27ae60',
+                img: 'photos/pui006_1.jpeg'
+            },
+            {
+                id: 'PUI-007',
+                lat: 13.902091, lng: 100.659298,
+                name: 'Bangkok Compound — Multiple Structures',
+                nameTh: 'บ้านหลายหลัง ซอยบ้านสวนศิวะ สายไหม',
+                type: 'house',
+                region: 'bangkok',
+                district: 'Sai Mai',
+                districtTh: 'สายไหม',
+                size: '~2-2.5 Rai · Multiple Buildings',
+                sizeTh: '~2-2.5 ไร่ · หลายอาคาร',
+                price: 'Contact for Price',
+                priceTh: 'ติดต่อสอบถามราคา',
+                desc: 'Large compound with multiple structures, courtyard & pond — O Ngoen, Sai Mai',
+                color: '#e74c3c',
+                img: null
+            }
+        ];
+
+        // Custom marker icons
+        function createIcon(color, type) {
+            const svg = type === 'house' 
+                ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28"><path fill="${color}" d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z"/><path fill="rgba(0,0,0,0.3)" d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z" opacity="0.15"/></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28"><path fill="${color}" d="M14 6l-3.75 5 2.85 3.8-1.6 1.2C9.81 13.75 7 10 7 10l-6 8h22L14 6z"/></svg>`;
+            
+            return L.divIcon({
+                html: `<div style="
+                    width: 36px; height: 36px; 
+                    background: ${color}; 
+                    border: 3px solid #fff; 
+                    border-radius: 50%; 
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 16px; color: #fff;
+                ">${type === 'house' ? '🏠' : '🏞️'}</div>`,
+                className: 'custom-marker',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -20]
+            });
+        }
+
+        // Initialize map — center on Thailand
+        const map = L.map('map', {
+            zoomControl: true,
+            scrollWheelZoom: true
+        }).setView([16.5, 99.5], 6);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CARTO',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Legend
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function() {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <h4>Legend / สัญลักษณ์</h4>
+                <div class="legend-item"><span class="legend-dot" style="background:#e74c3c"></span> House / บ้าน</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#27ae60"></span> Land / ที่ดิน</div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+
+        // Add markers
+        let markers = [];
+        const markerGroup = L.featureGroup();
+
+        function buildPopup(p) {
+            let imgHtml = p.img ? `<img src="${p.img}" class="popup-img" onerror="this.style.display='none'" />` : '';
+            return `
+                ${imgHtml}
+                <div class="popup-title">${p.name}</div>
+                <div class="popup-thai">${p.nameTh}</div>
+                <div class="popup-details">
+                    <span class="label">ID:</span> <span class="value">${p.id}</span><br>
+                    <span class="label">District:</span> <span class="value">${p.district} / ${p.districtTh}</span><br>
+                    <span class="label">Size:</span> <span class="value">${p.size}</span><br>
+                    <span class="label">ขนาด:</span> <span class="value">${p.sizeTh}</span>
+                </div>
+                <div class="popup-price">${p.price}</div>
+                <div class="popup-contact">
+                    <a href="https://wa.me/66616455555?text=I'm interested in ${p.id}: ${p.name}" class="btn-whatsapp" target="_blank">WhatsApp</a>
+                </div>
+            `;
+        }
+
+        function renderMarkers() {
+            const regionFilter = document.getElementById('filterRegion').value;
+            const typeFilter = document.getElementById('filterType').value;
+
+            markerGroup.clearLayers();
+            markers = [];
+
+            let count = 0;
+            properties.forEach(p => {
+                if (regionFilter !== 'all' && p.region !== regionFilter) return;
+                if (typeFilter !== 'all' && p.type !== typeFilter) return;
+
+                const marker = L.marker([p.lat, p.lng], {
+                    icon: createIcon(p.color, p.type)
+                }).bindPopup(buildPopup(p), { maxWidth: 300 });
+
+                markerGroup.addLayer(marker);
+                markers.push(marker);
+                count++;
+            });
+
+            markerGroup.addTo(map);
+            document.getElementById('propertyCount').textContent = `${count} ${count === 1 ? 'Property' : 'Properties'}`;
+
+            if (count > 0) {
+                map.fitBounds(markerGroup.getBounds().pad(0.1));
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('filterRegion').value = 'all';
+            document.getElementById('filterType').value = 'all';
+            renderMarkers();
+        }
+
+        document.getElementById('filterRegion').addEventListener('change', renderMarkers);
+        document.getElementById('filterType').addEventListener('change', renderMarkers);
+
+        renderMarkers();
+    </script>
+</body>
+</html>
