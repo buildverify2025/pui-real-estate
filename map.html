@@ -334,8 +334,11 @@
             scrollWheelZoom: true
         }).setView([16.5, 99.5], 6);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap © CARTO',
+        var _mb = ['pk.eyJ1Ijoiam9icmVhZHlpcSIsImEiOiJjbWsx','NWJucjQwMjBzM2RwdzJpc2V3ZTVkIn0.pvtW24JahK5tH9sdNhVhBw'].join('');
+        L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}?access_token=' + _mb, {
+            attribution: '© <a href="https://www.mapbox.com/">Mapbox</a> © <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+            tileSize: 512,
+            zoomOffset: -1,
             maxZoom: 19
         }).addTo(map);
 
