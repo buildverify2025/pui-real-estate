@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Thai Property List — Share Listing</title>
+  
+  <!-- OG Tags — updated dynamically via JS, but static fallback for crawlers -->
+  <meta property="og:title" content="Property Listing — Thai Property List" id="og-title">
+  <meta property="og:description" content="View property details and photos — ThaiPropertyList.com" id="og-desc">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="" id="og-image">
+  <meta property="og:url" content="" id="og-url">
+  <meta property="og:site_name" content="Thai Property List">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --gold: #B8860B;
+      --gold-light: #D4A843;
+      --dark: #1a1a2e;
+      --green: #25D366;
+      --line-green: #00B900;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #333;
+      --text-light: #666;
+      --text-muted: #999;
+      --radius: 12px;
+      --border: #eee;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Sarabun', 'Inter', sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      line-height: 1.6; 
+      max-width: 480px; 
+      margin: 0 auto;
+      padding-bottom: 90px;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--dark);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header .logo {
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .header .logo span { color: #fff; font-weight: 300; }
+    .header-back {
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+
+    /* PHOTO GALLERY */
+    .photo-grid {
+      display: grid;
+      gap: 2px;
+      background: #000;
+    }
+    .photo-grid.layout-1 { grid-template-columns: 1fr; }
+    .photo-grid.layout-2 { grid-template-columns: 1fr 1fr; }
+    .photo-grid.layout-3 { grid-template-columns: 1fr 1fr; }
+    .photo-grid.layout-3 .photo-item:first-child { grid-column: 1 / -1; }
+    .photo-grid.layout-4 { grid-template-columns: 1fr 1fr; }
+    .photo-grid.layout-many { grid-template-columns: 1fr 1fr; }
+    .photo-grid.layout-many .photo-item:first-child { grid-column: 1 / -1; }
+
+    .photo-item {
+      position: relative;
+      aspect-ratio: 4/3;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .photo-grid.layout-many .photo-item:first-child,
+    .photo-grid.layout-3 .photo-item:first-child { aspect-ratio: 16/9; }
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .photo-more {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .photo-count {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      z-index: 2;
+    }
+
+    /* FULLSCREEN VIEWER */
+    .viewer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 1000;
+      flex-direction: column;
+    }
+    .viewer.open { display: flex; }
+    .viewer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      color: #fff;
+    }
+    .viewer-close {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.6rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .viewer-counter { font-size: 0.9rem; opacity: 0.6; }
+    .viewer-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .viewer-main img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .viewer-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+    .viewer-prev { left: 8px; }
+    .viewer-next { right: 8px; }
+    .viewer-hint {
+      text-align: center;
+      padding: 10px;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--card);
+      margin: 8px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    }
+    .card-body { padding: 16px; }
+
+    /* BADGE */
+    .badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    /* TITLE - Bilingual */
+    .prop-title-th {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.3;
+    }
+    .prop-title-en {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+    .prop-location {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    /* DETAILS - Bilingual rows */
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-width: 90px;
+      flex-shrink: 0;
+    }
+    .detail-label .emoji { margin-right: 4px; }
+    .detail-value {
+      text-align: right;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+    .detail-value .sub {
+      display: block;
+      font-weight: 400;
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+
+    /* DESCRIPTION */
+    .desc-section { margin-top: 14px; }
+    .desc-th {
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.8;
+      margin-bottom: 6px;
+    }
+    .desc-en {
+      color: var(--text-light);
+      font-size: 0.88rem;
+      line-height: 1.7;
+      font-style: italic;
+    }
+
+    /* HIGHLIGHTS + SUITABLE */
+    .section-head {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--dark);
+      margin: 14px 0 8px;
+      display: flex;
+      gap: 6px;
+    }
+    .section-head .en { color: var(--text-light); font-weight: 400; }
+    .check-list { list-style: none; padding: 0; }
+    .check-list li {
+      padding: 3px 0;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .check-list .en-line {
+      color: var(--text-light);
+      font-size: 0.82rem;
+      padding-left: 22px;
+      margin-bottom: 4px;
+    }
+
+    /* MAP */
+    .map-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text);
+      margin-top: 14px;
+    }
+    .map-row:active { background: #e0e0e0; }
+    .map-icon { font-size: 1.5rem; }
+    .map-text .main { font-weight: 500; font-size: 0.9rem; }
+    .map-text .sub { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* SHARE TEXT PREVIEW */
+    .preview-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 14px 8px 4px;
+      font-weight: 600;
+    }
+    .preview-box {
+      background: #e8e8e8;
+      border-radius: var(--radius);
+      padding: 14px;
+      margin: 0 8px;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    /* BOTTOM BAR */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 10px 12px;
+      display: flex;
+      gap: 6px;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    .bar-btn {
+      flex: 1;
+      padding: 13px 6px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .bar-btn:active { opacity: 0.75; }
+    .btn-copy { background: var(--dark); color: #fff; }
+    .btn-share { background: var(--gold); color: #fff; }
+    .btn-line { background: var(--line-green); color: #fff; }
+    .btn-wa { background: var(--green); color: #fff; }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      top: 56px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--dark);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 18px;
+      font-size: 0.82rem;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 200;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* NO PHOTOS PLACEHOLDER */
+    .no-photos {
+      background: var(--dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--gold);
+      font-size: 1.2rem;
+    }
+
+    /* INDEX PAGE */
+    .index-list { padding: 12px; }
+    .index-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: var(--card);
+      border-radius: var(--radius);
+      text-decoration: none;
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .index-item:active { background: #f0f0f0; }
+    .index-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--dark);
+    }
+    .index-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .index-thumb-empty {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gold); font-size: 1.4rem;
+    }
+    .index-title { font-weight: 600; font-size: 0.9rem; line-height: 1.3; }
+    .index-loc { font-size: 0.78rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <a href="index.html" class="header-back">← กลับ / Back</a>
+    <div class="logo">Thai<span>PropertyList</span>.com</div>
+  </div>
+
+  <div id="app"></div>
+
+  <!-- Fullscreen Photo Viewer -->
+  <div class="viewer" id="viewer">
+    <div class="viewer-top">
+      <span class="viewer-counter" id="vCount"></span>
+      <button class="viewer-close" onclick="closeViewer()">✕</button>
+    </div>
+    <div class="viewer-main" id="vMain">
+      <img id="vImg" src="" alt="">
+      <button class="viewer-btn viewer-prev" onclick="vNav(-1)">‹</button>
+      <button class="viewer-btn viewer-next" onclick="vNav(1)">›</button>
+    </div>
+    <div class="viewer-hint">กดค้างรูปเพื่อบันทึก / Long press to save</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // =========================================
+    // PROPERTY DATABASE
+    // =========================================
+    const properties = {
+      'PUI-013': {
+        id: 'PUI-013',
+        badge: { th: 'เช่า', en: 'For Rent' },
+        title: { th: 'เดอะมูฟ บางนา — สตูดิโอคอนโด', en: 'The Muve Bangna — Studio Condo' },
+        location: { th: 'บางนา, กรุงเทพฯ', en: 'Bangna, Bangkok' },
+        photos: ['photos/muve_bedroom.jpg','photos/muve_bedroom2.jpg','photos/muve_desk.jpg','photos/muve_wardrobe_open.jpg','photos/muve_wardrobe.jpg','photos/muve_kitchen.jpg','photos/muve_cooktop.jpg','photos/muve_bathroom_sink.jpg','photos/muve_bathroom_mirror.jpg','photos/muve_bathroom_cabinet.jpg','photos/muve_shower.jpg','photos/muve_toilet.jpg','photos/muve_balcony.jpg','photos/muve_drying_rack.jpg','photos/muve_door_exterior.jpg','photos/muve_ceiling.jpg','photos/muve_room_number.jpg'],
+        details: [
+          { emoji: '💰', label: { th: 'ค่าเช่า', en: 'Rent' }, value: { th: '฿9,500/เดือน', en: '฿9,500/month' }},
+          { emoji: '📐', label: { th: 'ขนาด', en: 'Size' }, value: { th: '23 ตร.ม.', en: '23 sqm' }},
+          { emoji: '💵', label: { th: 'ค่ามัดจำ', en: 'Deposit' }, value: { th: 'ล่วงหน้า 1 เดือน + ประกัน 2 เดือน', en: '1 mo advance + 2 mo security' }},
+          { emoji: '🏠', label: { th: 'สิ่งอำนวยความสะดวก', en: 'Included' }, value: { th: 'เฟอร์บิลท์อิน + เครื่องใช้ไฟฟ้าครบ + ค่าส่วนกลาง', en: 'Built-in furniture + appliances + CAM fee' }},
+        ],
+        desc: {
+          th: 'พร้อมเข้าอยู่! สตูดิโอคอนโดทันสมัย ห่างถนนบางนา-ตราด 450 ม. เฟอร์บิลท์อิน เครื่องใช้ไฟฟ้าครบ เตาแม่เหล็กไฟฟ้า Teka ไมโครเวฟ ฟิตเนส สระว่ายน้ำ ที่จอดรถ 1 คัน',
+          en: 'Ready to move in! Modern studio condo 450m from Bangna–Trad Road. Fully furnished with built-in furniture, Teka induction cooktop, microwave, range hood. Building amenities: fitness, pool, meeting room, café & bar. 1 parking space included.'
+        },
+        suitable: [
+          { th: 'คนทำงานใกล้บางนา', en: 'Working professionals near Bangna' },
+          { th: 'นักศึกษา / คนโสด', en: 'Students / singles' },
+          { th: 'คู่รัก', en: 'Couples' },
+        ],
+        highlights: [
+          { th: 'ห่างถนนบางนา-ตราด 450 ม.', en: '450m from Bangna–Trad Road' },
+          { th: 'เฟอร์บิลท์อิน + เครื่องใช้ไฟฟ้าครบ', en: 'Built-in furniture + full appliances' },
+          { th: 'เตาแม่เหล็กไฟฟ้า Teka + เครื่องดูดควัน', en: 'Teka induction cooktop + range hood' },
+          { th: 'ฟิตเนส, สระว่ายน้ำ, ห้องประชุม', en: 'Fitness, pool, meeting room' },
+          { th: 'คาเฟ่ & บาร์ในโครงการ', en: 'On-site café & bar' },
+          { th: 'ที่จอดรถ 1 คัน', en: '1 parking space included' },
+          { th: 'รวมค่าส่วนกลาง', en: 'Common area fee included' },
+        ],
+        mapUrl: 'https://maps.app.goo.gl/VBv85yHfwd8vguyQ7',
+        gps: null,
+        contact: '+66616455555'
+      },
+      'PUI-007': {
+        id: 'PUI-007',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'บ้านสวนศิวะ — คฤหาสน์หรู', en: 'Baan Suan Siwa — Luxury Compound' },
+        location: { th: 'สายไหม, กรุงเทพฯ', en: 'Sai Mai, Bangkok' },
+        photos: ['photos/siwa_exterior_1.jpg','photos/siwa_gate.jpg','photos/siwa_livingroom.jpg','photos/siwa_pond.jpg','photos/siwa_guesthouse.jpg','photos/siwa_hallway.jpg','photos/siwa_shrine.jpg'],
+        details: [
+          { emoji: '💰', label: { th: 'ราคา', en: 'Price' }, value: { th: '฿180,000,000', en: '฿180,000,000' }},
+          { emoji: '🏷️', label: { th: 'ที่ดิน', en: 'Land' }, value: { th: '5 ไร่ (8,084 ตร.ม.)', en: '5 Rai (8,084 sqm)' }},
+          { emoji: '📐', label: { th: 'ราคา/ตร.ว.', en: 'Price/sq.wah' }, value: { th: '~฿89,000/ตร.ว.', en: '~฿89,000/sq.wah' }},
+          { emoji: '🏠', label: { th: 'สิ่งปลูกสร้าง', en: 'Buildings' }, value: { th: '3 หลัง + สระว่ายน้ำ', en: '3 Buildings + Pool' }},
+        ],
+        desc: {
+          th: 'คฤหาสน์หรู 5 ไร่ มีสิ่งปลูกสร้าง 3 หลัง สระว่ายน้ำ บ่อบัว ศาลาไทย สวนร่มรื่น ใกล้สนามบินดอนเมือง เชื่อมต่อ BTS และรถไฟฟ้าสายสีชมพู',
+          en: 'Stunning 5-rai estate with 3 buildings, swimming pool, lotus pond, Thai shrine pavilion, and mature gardens. Near Don Mueang Airport with BTS and Pink Line access.'
+        },
+        suitable: [
+          { th: 'ที่อยู่อาศัยหรูหรา', en: 'Luxury residence' },
+          { th: 'โรงแรมบูทีค / รีสอร์ท', en: 'Boutique hotel / resort' },
+          { th: 'ศูนย์ประชุมองค์กร', en: 'Corporate retreat' },
+        ],
+        highlights: [
+          { th: 'ที่ดิน 5 ไร่ ในสายไหม กรุงเทพฯ', en: '5 Rai of land in Sai Mai, Bangkok' },
+          { th: 'สิ่งปลูกสร้าง 3 หลัง + สระว่ายน้ำ', en: '3 separate buildings + pool' },
+          { th: 'บ่อบัว & ศาลาไทย', en: 'Lotus pond & Thai shrine pavilion' },
+          { th: 'ใกล้สนามบินดอนเมือง', en: 'Near Don Mueang Airport' },
+          { th: 'เชื่อมต่อ BTS & รถไฟฟ้าสายสีชมพู', en: 'BTS & Pink Line accessible' },
+        ],
+        mapUrl: null,
+        gps: null,
+        contact: '+66616455555'
+      },
+      'PUI-010': {
+        id: 'PUI-010',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'ที่ดิน ถนนเพิ่มสิน 3 งาน 31 ตร.ว.', en: 'Land — Permsin Road, 3 Ngan 31 Sq.Wah' },
+        location: { th: 'แขวงออเงิน เขตสายไหม กรุงเทพมหานคร', en: 'Or Ngoen, Sai Mai, Bangkok' },
+        photos: ['photos/permsin_3ngan_1.jpg','photos/permsin_3ngan_2.jpg','photos/permsin_3ngan_map.jpg'],
+        details: [
+          { emoji: '💰', label: { th: 'ราคา', en: 'Price' }, value: { th: '฿16,000,000', en: '฿16,000,000' }},
+          { emoji: '🏷️', label: { th: 'ที่ดิน', en: 'Land' }, value: { th: '3 งาน 31 ตร.ว. (331 ตร.ว.)', en: '3 Ngan 31 Sq.Wah (331 sq.wah)' }},
+          { emoji: '📐', label: { th: 'ราคา/ตร.ว.', en: 'Price/sq.wah' }, value: { th: '~฿48,000++/ตร.ว.', en: '~฿48,000++/sq.wah' }},
+          { emoji: '✨', label: { th: 'สถานะ', en: 'Status' }, value: { th: 'ที่ดินถมแล้ว — พร้อมสร้าง', en: 'Filled land — ready to build' }},
+        ],
+        desc: {
+          th: 'ที่ดินทำเลดี ถนนเพิ่มสิน – พร้อมสร้างทันที! ที่ดินถมแล้ว พร้อมพัฒนาได้ทันที ประหยัดเวลาและต้นทุน',
+          en: 'Prime land on Permsin Road, Sai Mai district — filled and ready for immediate development. Save time and construction costs.'
+        },
+        suitable: [
+          { th: 'สร้างบ้านพักอาศัย', en: 'Build residential home' },
+          { th: 'ทำโฮมออฟฟิศ', en: 'Home office' },
+          { th: 'ลงทุนเก็งกำไรในทำเลศักยภาพ', en: 'Investment in growing area' },
+        ],
+        highlights: [
+          { th: 'เข้า-ออกสะดวก ใกล้ถนนหลัก', en: 'Easy access, near main road' },
+          { th: 'ทำเลกำลังเติบโตสูงในโซนสายไหม', en: 'Growing area in Sai Mai zone' },
+          { th: 'บรรยากาศดี เหมาะอยู่อาศัย', en: 'Good atmosphere, suitable for living' },
+        ],
+        mapUrl: 'https://www.google.com/maps/place/13%C2%B054\'09.0%22N+100%C2%B039\'32.9%22E',
+        gps: { lat: 13.9025058, lng: 100.6565566 },
+        contact: '+66616455555'
+      },
+      'PUI-011': {
+        id: 'PUI-011',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'ที่ดินเชิงพาณิชย์ — ถนนเพิ่มสิน 4+ ไร่', en: 'Commercial Land — Permsin Road, 4+ Rai' },
+        location: { th: 'สายไหม, กรุงเทพฯ', en: 'Sai Mai, Bangkok' },
+        photos: ['photos/permsin_4rai_aerial.jpg','photos/permsin_4rai_map.jpg','photos/permsin_4rai_plan.jpg'],
+        details: [
+          { emoji: '💰', label: { th: 'ราคา', en: 'Price' }, value: { th: '฿40,000/ตร.ว.', en: '฿40,000/sq.wah' }},
+          { emoji: '🏷️', label: { th: 'ที่ดิน', en: 'Land' }, value: { th: '4-2-62 ไร่ (7,448 ตร.ม.)', en: '4-2-62 Rai (7,448 sqm)' }},
+          { emoji: '📐', label: { th: 'ผังเมือง', en: 'Zoning' }, value: { th: 'สีเหลือง (พาณิชย์)', en: 'Yellow Zone (Commercial)' }},
+          { emoji: '🛤️', label: { th: 'ถนน', en: 'Road' }, value: { th: 'ถนนเพิ่มสิน', en: 'Permsin Road' }},
+        ],
+        desc: {
+          th: 'ที่ดินเปล่าขนาดใหญ่ ถนนเพิ่มสิน ผังเมืองสีเหลือง เหมาะสำหรับพัฒนาเชิงพาณิชย์หรือที่อยู่อาศัย สาธารณูปโภคพร้อม',
+          en: 'Large vacant plot on Permsin Road with yellow zoning — suitable for commercial or residential development. Complete basic utilities available.'
+        },
+        suitable: [
+          { th: 'สร้างบ้านพักอาศัย', en: 'Residential development' },
+          { th: 'ทำโฮมออฟฟิศ', en: 'Home office' },
+          { th: 'โครงการเชิงพาณิชย์', en: 'Commercial project' },
+        ],
+        highlights: [
+          { th: 'ผังเมืองสีเหลือง — ใช้เชิงพาณิชย์ได้', en: 'Yellow zone — commercial use permitted' },
+          { th: 'ติดถนนเพิ่มสิน', en: 'Permsin Road frontage' },
+          { th: 'สาธารณูปโภคครบ', en: 'All utilities available' },
+        ],
+        mapUrl: null, gps: null, contact: '+66616455555'
+      },
+      'PUI-005': {
+        id: 'PUI-005',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'ที่ดินหุบเขา — 50 ไร่', en: 'Mountain Valley Land — 50 Rai' },
+        location: { th: 'แม่แตง, เชียงใหม่', en: 'Mae Taeng, Chiang Mai' },
+        photos: ['photos/50rai_dji_fly_20250824_143918_0019_1756026620903_photo.jpg','photos/50rai_dji_fly_20250824_143056_0014_1756026621114_photo.jpg','photos/50rai_dji_fly_20250824_143936_0020_1756026619578_photo.jpg','photos/50rai_dji_fly_20250824_143950_0021_1756026618699_photo.jpg'],
+        details: [
+          { emoji: '🏷️', label: { th: 'ที่ดิน', en: 'Land' }, value: { th: '50 ไร่ (80,000 ตร.ม.)', en: '50 Rai (80,000 sqm)' }},
+          { emoji: '⛰️', label: { th: 'ระดับความสูง', en: 'Elevation' }, value: { th: '~900 เมตร', en: '~900m' }},
+          { emoji: '📐', label: { th: 'ผังเมือง', en: 'Zoning' }, value: { th: 'เกษตรกรรม', en: 'Agricultural' }},
+          { emoji: '✨', label: { th: 'ลักษณะเด่น', en: 'Features' }, value: { th: 'นาข้าว + ลำธาร', en: 'Rice paddies + stream' }},
+        ],
+        desc: {
+          th: 'ที่ดิน 50 ไร่สวยงาม มีนาข้าว ลำธารภูเขา และวิวป่าไม้ เหมาะสำหรับรีสอร์ทหรือโครงการอนุรักษ์',
+          en: 'Stunning 50 rai of agricultural land with rice paddies, mountain stream, and forest backdrop. Perfect for resort or eco-development.'
+        },
+        suitable: [
+          { th: 'รีสอร์ท / โครงการอนุรักษ์', en: 'Resort / eco-development' },
+          { th: 'ฟาร์มเกษตร', en: 'Agricultural estate' },
+          { th: 'ลงทุนระยะยาว', en: 'Long-term investment' },
+        ],
+        highlights: [
+          { th: '50 ไร่ หุบเขาสวยงาม', en: '50 rai of stunning mountain valley' },
+          { th: 'นาข้าวและลำธารธรรมชาติ', en: 'Rice paddies and natural stream' },
+          { th: 'วิวป่าไม้และภูเขา', en: 'Forest backdrop with mountain views' },
+        ],
+        mapUrl: null, gps: null, contact: '+66616455555'
+      },
+      'PUI-003': {
+        id: 'PUI-003',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'ที่ดินเนินเขาป่าไม้ — 6 ไร่', en: 'Hillside Forest Land — 6 Rai' },
+        location: { th: 'แม่แตง, เชียงใหม่', en: 'Mae Taeng, Chiang Mai' },
+        photos: ['photos/6rai_dji_fly_20250824_130830_0007_1756026818650_photo.jpg','photos/6rai_dji_fly_20250824_130848_0008_1756026819457_photo.jpg','photos/6rai_dji_fly_20250824_130856_0011_1756026719577_photo.jpg','photos/6rai_dji_fly_20250824_130900_0012_1756026720335_photo.jpg','photos/6rai_dji_fly_20250824_130904_0013_1756026721112_photo.jpg'],
+        details: [
+          { emoji: '🏷️', label: { th: 'ที่ดิน', en: 'Land' }, value: { th: '6 ไร่ (9,600 ตร.ม.)', en: '6 Rai (9,600 sqm)' }},
+          { emoji: '⛰️', label: { th: 'ระดับความสูง', en: 'Elevation' }, value: { th: '~997 เมตร', en: '~997m' }},
+          { emoji: '🌲', label: { th: 'ภูมิประเทศ', en: 'Terrain' }, value: { th: 'เนินเขาร่มรื่น', en: 'Forested hillside' }},
+          { emoji: '🛤️', label: { th: 'การเข้าถึง', en: 'Access' }, value: { th: 'ถนนลาดยางบนภูเขา', en: 'Paved mountain road' }},
+        ],
+        desc: {
+          th: 'ที่ดินเนินเขาร่มรื่นใกล้ถนนลาดยางบนภูเขา ต้นไม้ใหญ่ วิวภูเขา เหมาะสำหรับวิลล่าส่วนตัวหรือรีทรีท',
+          en: 'Forested hillside plot near paved mountain road. Mature trees, mountain views. Ideal for private villa or boutique retreat.'
+        },
+        suitable: [
+          { th: 'วิลล่าส่วนตัว', en: 'Private villa' },
+          { th: 'รีทรีทบูทีค', en: 'Boutique retreat' },
+          { th: 'พักผ่อนท่ามกลางธรรมชาติ', en: 'Nature escape' },
+        ],
+        highlights: [
+          { th: 'เนินเขาร่มรื่นต้นไม้ใหญ่', en: 'Forested hillside with mature trees' },
+          { th: 'วิวภูเขา สูง 997 เมตร', en: 'Mountain views at 997m elevation' },
+          { th: 'ใกล้ถนนลาดยาง', en: 'Near paved road' },
+          { th: 'เงียบสงบ เป็นส่วนตัว', en: 'Private and peaceful setting' },
+        ],
+        mapUrl: null, gps: null, contact: '+66616455555'
+      },
+      'PUI-001': {
+        id: 'PUI-001',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'Country Park Ville — บ้านสไตล์ทิวดอร์', en: 'Country Park Ville — Tudor House' },
+        location: { th: 'หางดง, เชียงใหม่', en: 'Hang Dong, Chiang Mai' },
+        photos: ['photos/IMG_9073.jpeg','photos/IMG_9078.jpeg','photos/IMG_9085.jpeg','photos/IMG_9077.jpeg','photos/IMG_9080.jpeg','photos/IMG_9081.jpeg','photos/IMG_9083.jpeg','photos/IMG_9084.jpeg'],
+        details: [
+          { emoji: '🛏️', label: { th: 'ห้องนอน', en: 'Bedrooms' }, value: { th: '4-5', en: '4-5' }},
+          { emoji: '🏠', label: { th: 'ประเภท', en: 'Type' }, value: { th: 'บ้าน 2 ชั้น', en: '2-Storey House' }},
+          { emoji: '🏷️', label: { th: 'ที่ดิน', en: 'Plot' }, value: { th: 'แปลงใหญ่', en: 'Large plot' }},
+          { emoji: '🎨', label: { th: 'สไตล์', en: 'Style' }, value: { th: 'Tudor', en: 'Tudor' }},
+        ],
+        desc: {
+          th: 'บ้าน 2 ชั้นสไตล์ทิวดอร์บนที่ดินกว้าง โอกาสในการปรับปรุง โครงสร้างแข็งแรง ต้นไม้ใหญ่ร่มรื่น',
+          en: 'Tudor-style 2-storey house on spacious plot. Renovation opportunity with solid structure and mature trees.'
+        },
+        suitable: [
+          { th: 'บ้านครอบครัว (หลังปรับปรุง)', en: 'Family home (after renovation)' },
+          { th: 'ลงทุนปรับปรุงขาย', en: 'Investment flip' },
+          { th: 'อสังหาฯ ให้เช่า', en: 'Rental property' },
+        ],
+        highlights: [
+          { th: 'โครงสร้าง RC แข็งแรง', en: 'Solid RC structure' },
+          { th: 'ที่ดินกว้าง ต้นไม้ใหญ่', en: 'Large plot with mature trees' },
+          { th: 'โอกาสปรับปรุง', en: 'Renovation opportunity' },
+          { th: 'หมู่บ้าน Country Park Ville', en: 'Country Park Ville estate' },
+        ],
+        mapUrl: null, gps: { lat: 18.7284, lng: 98.9375 }, contact: '+66616455555'
+      },
+      'PUI-012': {
+        id: 'PUI-012',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'ที่ดินบ้านถวาย — 68 ไร่', en: 'Ban Tawai Estate — 68 Rai' },
+        location: { th: 'หางดง, เชียงใหม่', en: 'Hang Dong, Chiang Mai' },
+        photos: [],
+        details: [
+          { emoji: '🏷️', label: { th: 'ที่ดิน', en: 'Land' }, value: { th: '68+ ไร่ (109,208 ตร.ม.)', en: '68+ Rai (109,208 sqm)' }},
+          { emoji: '📜', label: { th: 'โฉนด', en: 'Title Deeds' }, value: { th: '19 โฉนด + 3 ถนน', en: '19 Chanote + 3 road' }},
+          { emoji: '📍', label: { th: 'ทำเล', en: 'Location' }, value: { th: 'ใกล้บ้านถวาย', en: 'Near Ban Tawai' }},
+          { emoji: '📐', label: { th: 'ประเภท', en: 'Type' }, value: { th: 'ที่ดินพัฒนา', en: 'Development land' }},
+        ],
+        desc: {
+          th: 'ที่ดินขนาดใหญ่ 68+ ไร่ ใกล้บ้านถวาย (หมู่บ้านแกะสลักไม้ชื่อดัง) โฉนด 19 แปลง + ถนน 3 แปลง โอกาสพัฒนาหรือลงทุน',
+          en: 'Massive 68+ rai land package near the famous Ban Tawai woodcarving village. 19 Chanote title deeds plus 3 road parcels.'
+        },
+        suitable: [
+          { th: 'โครงการพัฒนาขนาดใหญ่', en: 'Large-scale development' },
+          { th: 'โครงการรีสอร์ท / โรงแรม', en: 'Resort / hotel project' },
+          { th: 'ฟาร์มเกษตร', en: 'Agricultural estate' },
+        ],
+        highlights: [
+          { th: '68+ ไร่ — ที่ดินแปลงใหญ่', en: '68+ Rai — massive land package' },
+          { th: '19 โฉนดแยกแปลง', en: '19 individual Chanote title deeds' },
+          { th: 'ใกล้บ้านถวายที่มีชื่อเสียง', en: 'Near famous Ban Tawai village' },
+        ],
+        mapUrl: null, gps: null, contact: '+66616455555'
+      },
+      'PUI-006': {
+        id: 'PUI-006',
+        badge: { th: 'ขาย', en: 'For Sale' },
+        title: { th: 'ที่ดินพัฒนา — หางดง', en: 'Development Land — Hang Dong' },
+        location: { th: 'หางดง, เชียงใหม่', en: 'Hang Dong, Chiang Mai' },
+        photos: ['photos/plot_near_houses_0002.jpg','photos/plot_near_houses_0003.jpg'],
+        details: [
+          { emoji: '🏷️', label: { th: 'ขนาด', en: 'Size' }, value: { th: 'รอยืนยัน', en: 'TBD' }},
+          { emoji: '📍', label: { th: 'พื้นที่', en: 'Area' }, value: { th: 'ที่อยู่อาศัย', en: 'Residential' }},
+          { emoji: '✨', label: { th: 'ลักษณะเด่น', en: 'Feature' }, value: { th: 'สระน้ำธรรมชาติ', en: 'Natural pond' }},
+        ],
+        desc: {
+          th: 'ที่ดินเปล่ามีสระน้ำธรรมชาติ ใกล้ชุมชนและวัด เหมาะสำหรับโครงการที่อยู่อาศัย',
+          en: 'Undeveloped land with natural pond, near residential area and temple. Prime for residential project.'
+        },
+        suitable: [
+          { th: 'โครงการที่อยู่อาศัย', en: 'Residential project' },
+          { th: 'บ้านส่วนตัว', en: 'Private home' },
+        ],
+        highlights: [
+          { th: 'สระน้ำธรรมชาติ', en: 'Natural pond' },
+          { th: 'ใกล้ชุมชนและวัด', en: 'Near residential area and temple' },
+          { th: 'หางดง — ทำเลดี', en: 'Hang Dong — established area' },
+        ],
+        mapUrl: null, gps: null, contact: '+66616455555'
+      }
+    };
+
+    // =========================================
+    // STATE
+    // =========================================
+    let vPhotos = [], vIdx = 0;
+
+    // =========================================
+    // HELPERS
+    // =========================================
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+    }
+
+    // =========================================
+    // VIEWER
+    // =========================================
+    function openViewer(photos, idx) {
+      vPhotos = photos; vIdx = idx || 0;
+      updateViewer();
+      document.getElementById('viewer').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeViewer() {
+      document.getElementById('viewer').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function vNav(d) {
+      vIdx = (vIdx + d + vPhotos.length) % vPhotos.length;
+      updateViewer();
+    }
+    function updateViewer() {
+      document.getElementById('vImg').src = vPhotos[vIdx];
+      document.getElementById('vCount').textContent = `${vIdx+1} / ${vPhotos.length}`;
+    }
+    // Swipe
+    (function(){
+      let sx=0;
+      const el = document.getElementById('vMain');
+      el.addEventListener('touchstart', e => { sx = e.touches[0].clientX; });
+      el.addEventListener('touchend', e => {
+        const d = sx - e.changedTouches[0].clientX;
+        if (Math.abs(d) > 50) vNav(d > 0 ? 1 : -1);
+      });
+    })();
+
+    // =========================================
+    // GENERATE BILINGUAL SHARE TEXT
+    // =========================================
+    function makeShareText(p) {
+      let L = [];
+      L.push(`🔥 ${p.title.th}`);
+      L.push(`   ${p.title.en}`);
+      L.push('');
+      L.push(`📍 ${p.location.th}`);
+      L.push(`   ${p.location.en}`);
+      L.push('');
+
+      p.details.forEach(d => {
+        L.push(`${d.emoji} ${d.label.th} / ${d.label.en}: ${d.value.th}`);
+        if (d.value.th !== d.value.en) L.push(`   ${d.value.en}`);
+      });
+      L.push('');
+
+      if (p.suitable && p.suitable.length) {
+        L.push('🌿 เหมาะสำหรับ / Suitable for:');
+        p.suitable.forEach(s => L.push(`• ${s.th} / ${s.en}`));
+        L.push('');
+      }
+
+      if (p.highlights && p.highlights.length) {
+        L.push('📌 จุดเด่น / Highlights:');
+        p.highlights.forEach(h => L.push(`✅ ${h.th}`));
+        L.push('---');
+        p.highlights.forEach(h => L.push(`✅ ${h.en}`));
+        L.push('');
+      }
+
+      if (p.mapUrl) {
+        L.push(`🗺️ แผนที่ / Map:`);
+        L.push(p.mapUrl);
+        L.push('');
+      } else if (p.gps) {
+        L.push(`🗺️ แผนที่ / Map:`);
+        L.push(`https://www.google.com/maps?q=${p.gps.lat},${p.gps.lng}`);
+        L.push('');
+      }
+
+      L.push(`📞 ติดต่อ / Contact: ${p.contact}`);
+      L.push(`🌐 ThaiPropertyList.com`);
+
+      return L.join('\n');
+    }
+
+    // =========================================
+    // ACTIONS
+    // =========================================
+    function copyShareText(id) {
+      const p = properties[id];
+      const text = makeShareText(p);
+      navigator.clipboard.writeText(text).then(() => {
+        toast('📋 คัดลอกแล้ว! / Copied!');
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('📋 คัดลอกแล้ว! / Copied!');
+      });
+    }
+
+    function shareNative(id) {
+      const p = properties[id];
+      const text = makeShareText(p);
+      if (navigator.share) {
+        navigator.share({ title: `${p.title.th} / ${p.title.en}`, text, url: window.location.href }).catch(()=>{});
+      } else {
+        copyShareText(id);
+      }
+    }
+
+    function lineShare(id) {
+      const p = properties[id];
+      const text = makeShareText(p);
+      window.open(`https://line.me/R/share?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    function waShare(id) {
+      const p = properties[id];
+      const text = makeShareText(p);
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    // =========================================
+    // RENDER
+    // =========================================
+    function render() {
+      const params = new URLSearchParams(window.location.search);
+      const id = (params.get('id') || '').toUpperCase();
+      const p = properties[id];
+      const app = document.getElementById('app');
+
+      if (!p) {
+        // Index
+        app.innerHTML = `
+          <div class="index-list">
+            <div style="padding:8px 0 12px;font-weight:600;font-size:1rem;">เลือกรายการเพื่อแชร์ / Select listing to share</div>
+            ${Object.values(properties).map(pr => `
+              <a href="?id=${pr.id}" class="index-item">
+                <div class="index-thumb">
+                  ${pr.photos.length ? `<img src="${pr.photos[0]}" loading="lazy">` : `<div class="index-thumb-empty">🏠</div>`}
+                </div>
+                <div>
+                  <div class="index-title">${pr.title.th}</div>
+                  <div class="index-loc">📍 ${pr.location.th} / ${pr.location.en}</div>
+                </div>
+              </a>
+            `).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      // OG tags
+      document.getElementById('og-title').content = `${p.title.th} / ${p.title.en}`;
+      document.getElementById('og-desc').content = p.desc.th;
+      if (p.photos.length) {
+        const base = window.location.origin + window.location.pathname.replace('share.html','');
+        document.getElementById('og-image').content = base + p.photos[0];
+      }
+      document.getElementById('og-url').content = window.location.href;
+      document.title = `${p.title.th} — Thai Property List`;
+
+      // Photo grid
+      const photos = p.photos;
+      const maxShow = 5;
+      const show = photos.slice(0, maxShow);
+      const layout = photos.length === 0 ? '' : photos.length <= 2 ? `layout-${photos.length}` : photos.length <= 4 ? `layout-${photos.length}` : 'layout-many';
+
+      const photoHTML = photos.length === 0
+        ? `<div class="no-photos">📷 รูปเร็วๆนี้ / Photos coming soon</div>`
+        : `<div class="photo-grid ${layout}">
+            ${show.map((ph, i) => `
+              <div class="photo-item" onclick="openViewer(${JSON.stringify(photos)}, ${i})">
+                <img src="${ph}" alt="" loading="lazy">
+                ${i === 0 ? `<span class="photo-count">📷 ${photos.length}</span>` : ''}
+                ${i === maxShow-1 && photos.length > maxShow ? `<div class="photo-more">+${photos.length - maxShow}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>`;
+
+      // Details rows
+      const detailsHTML = p.details.map(d => `
+        <div class="detail-row">
+          <div class="detail-label">
+            <span class="emoji">${d.emoji}</span>
+            ${d.label.th}<br>${d.label.en}
+          </div>
+          <div class="detail-value">
+            ${d.value.th}
+            ${d.value.th !== d.value.en ? `<span class="sub">${d.value.en}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      // Suitable
+      const suitableHTML = p.suitable && p.suitable.length ? `
+        <div class="section-head">🌿 เหมาะสำหรับ <span class="en">/ Suitable for</span></div>
+        <ul class="check-list">
+          ${p.suitable.map(s => `<li>• ${s.th} <span style="color:var(--text-muted);font-size:0.82rem;">/ ${s.en}</span></li>`).join('')}
+        </ul>
+      ` : '';
+
+      // Highlights
+      const hlHTML = p.highlights && p.highlights.length ? `
+        <div class="section-head">📌 จุดเด่น <span class="en">/ Highlights</span></div>
+        <ul class="check-list">
+          ${p.highlights.map(h => `
+            <li>✅ ${h.th}</li>
+            <li class="en-line">${h.en}</li>
+          `).join('')}
+        </ul>
+      ` : '';
+
+      // Map
+      let mapHTML = '';
+      const mapLink = p.mapUrl || (p.gps ? `https://www.google.com/maps?q=${p.gps.lat},${p.gps.lng}` : null);
+      if (mapLink) {
+        mapHTML = `
+          <a href="${mapLink}" target="_blank" class="map-row">
+            <span class="map-icon">🗺️</span>
+            <div class="map-text">
+              <div class="main">${p.location.th} / ${p.location.en}</div>
+              <div class="sub">เปิดแผนที่ / Open in Google Maps →</div>
+            </div>
+          </a>
+        `;
+      }
+
+      // Share text preview
+      const shareText = makeShareText(p);
+
+      app.innerHTML = `
+        ${photoHTML}
+
+        <div class="card">
+          <div class="card-body">
+            <span class="badge">${p.badge.th} / ${p.badge.en}</span>
+            <div class="prop-title-th">${p.title.th}</div>
+            <div class="prop-title-en">${p.title.en}</div>
+            <div class="prop-location">${p.location.th} / ${p.location.en}</div>
+            
+            ${detailsHTML}
+            
+            <div class="desc-section">
+              <p class="desc-th">${p.desc.th}</p>
+              <p class="desc-en">${p.desc.en}</p>
+            </div>
+
+            ${suitableHTML}
+            ${hlHTML}
+            ${mapHTML}
+          </div>
+        </div>
+
+        <div class="preview-label">📋 ข้อความสำหรับแชร์ / Share text</div>
+        <div class="preview-box">${shareText}</div>
+
+        <div class="bottom-bar">
+          <button class="bar-btn btn-copy" onclick="copyShareText('${p.id}')">📋 คัดลอก</button>
+          <button class="bar-btn btn-share" onclick="shareNative('${p.id}')">📤 Share</button>
+          <button class="bar-btn btn-line" onclick="lineShare('${p.id}')">💚 LINE</button>
+          <button class="bar-btn btn-wa" onclick="waShare('${p.id}')">💬 WA</button>
+        </div>
+      `;
+    }
+
+    // INIT
+    render();
+  </script>
+</body>
+</html>
